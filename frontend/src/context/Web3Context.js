@@ -147,9 +147,9 @@ export const Web3Provider = ({ children }) => {
       setChainId(Number(chainId));
       setIsConnected(true);
 
-      // Check if we're on the correct network (localhost:8545 = chainId 1337)
-      if (Number(chainId) !== 1337) {
-        toast.warning('Please switch to the local development network (chainId: 1337)');
+      // Check if we're on the correct network (localhost:8545 = chainId 31337)
+      if (Number(chainId) !== 31337) {
+        toast.warning('Please switch to the local development network (chainId: 31337)');
         // Auto-switch to localhost network
         await switchToLocalNetwork();
       } else {
@@ -202,7 +202,7 @@ export const Web3Provider = ({ children }) => {
             method: 'wallet_addEthereumChain',
             params: [
               {
-                chainId: '0x539',
+                chainId: '0x7A69',
                 chainName: 'Localhost 8545',
                 nativeCurrency: {
                   name: 'ETH',
