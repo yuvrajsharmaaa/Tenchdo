@@ -138,9 +138,28 @@ contract ComplianceSecure is ICompliance, Ownable, AccessControl, ReentrancyGuar
     /**
      * @dev Enhanced rule management with metadata
      */
-    function addComplianceRule(bytes32 _ruleId, string calldata _description) 
+    function addComplianceRule(bytes32 _ruleId) 
         external 
         override 
+        onlyComplianceOfficer 
+    {
+        require(_ruleId != bytes32(0), "ComplianceSecure: invalid rule ID");
+        
+        _complianceRules[_ruleId] = ComplianceRule({
+            isActive: true,
+            createdAt: block.timestamp,
+            description: "Compliance rule"
+        });
+        
+        emit ComplianceRuleAdded(_ruleId);
+        emit ComplianceRuleUpdated(_ruleId, true, "Compliance rule");
+    }
+    
+    /**
+     * @dev Enhanced rule management with metadata and description
+     */
+    function addComplianceRuleWithDescription(bytes32 _ruleId, string calldata _description) 
+        external 
         onlyComplianceOfficer 
     {
         require(_ruleId != bytes32(0), "ComplianceSecure: invalid rule ID");
