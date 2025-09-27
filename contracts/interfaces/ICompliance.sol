@@ -30,5 +30,8 @@ interface ICompliance {
     function addCountryRestriction(uint16 _country) external;
     function removeCountryRestriction(uint16 _country) external;
     function isCountryRestricted(uint16 _country) external view returns (bool);
+    
+    // Holder count management
+    function updateHolderCount(address _from, address _to, uint256 _amount) external;
 }
 

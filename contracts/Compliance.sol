@@ -67,8 +67,12 @@ contract Compliance is ICompliance, Ownable {
             if (!identityRegistry.isVerified(_to)) {
                 return false;
             }
-            uint16 toCountry = identityRegistry.investorCountry(_to);
-            if (_restrictedCountries[toCountry]) {
+            uint16 recipientCountry = identityRegistry.investorCountry(_to);
+            if (_restrictedCountries[recipientCountry]) {
+                return false;
+            }
+            // Check holder limits for new investors
+            if (!_isHolder[_to] && maxHolders > 0 && currentHolders >= maxHolders) {
                 return false;
             }
             return true;
@@ -92,7 +96,11 @@ contract Compliance is ICompliance, Ownable {
             return false;
         }
         
-        // Additional compliance checks can be added here
+        // Check holder limits for new investors
+        if (!_isHolder[_to] && maxHolders > 0 && currentHolders >= maxHolders) {
+            return false;
+        }
+        
         return true;
     }
     
@@ -199,18 +207,34 @@ contract Compliance is ICompliance, Ownable {
     
     /**
      * @dev Update holder count (called by token contract)
-     * @param _holder Address of holder
-     * @param _isNewHolder True if this is a new holder
+     * @param _from Address sending tokens (address(0) for minting)
+     * @param _to Address receiving tokens (address(0) for burning)
+     * @param _amount Amount being transferred
      */
-    function updateHolderCount(address _holder, bool _isNewHolder) external {
+    function updateHolderCount(address _from, address _to, uint256 _amount) external override {
         // This should be called by the token contract
         // In production, add proper access control
-        if (_isNewHolder && !_isHolder[_holder]) {
-            _isHolder[_holder] = true;
-            currentHolders++;
-        } else if (!_isNewHolder && _isHolder[_holder]) {
-            _isHolder[_holder] = false;
-            currentHolders--;
+        
+        // Handle minting (from == address(0))
+        if (_from == address(0) && _to != address(0) && _amount > 0) {
+            if (!_isHolder[_to]) {
+                _isHolder[_to] = true;
+                currentHolders++;
+            }
+        }
+        
+        // Handle burning (to == address(0))
+        if (_to == address(0) && _from != address(0) && _amount > 0) {
+            // Check if holder has any remaining balance after burn
+            // This would need to be called after the burn transaction
+        }
+        
+        // Handle regular transfers
+        if (_from != address(0) && _to != address(0) && _amount > 0) {
+            if (!_isHolder[_to]) {
+                _isHolder[_to] = true;
+                currentHolders++;
+            }
         }
     }
 }

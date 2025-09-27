@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./RealEstateToken.sol";
 
@@ -11,6 +12,7 @@ import "./RealEstateToken.sol";
  * @dev Manages lease agreements and rent payments for tokenized real estate
  */
 contract LeaseManager is Ownable, ReentrancyGuard {
+    using SafeERC20 for IERC20;
     
     // Lease status enum
     enum LeaseStatus {
@@ -173,10 +175,8 @@ contract LeaseManager is Ownable, ReentrancyGuard {
         lease.status = LeaseStatus.Active;
         
         // Transfer security deposit from tenant to contract
-        require(
-            paymentToken.transferFrom(msg.sender, address(this), lease.securityDeposit),
-            "Deposit transfer failed"
-        );
+        // Transfer deposit from tenant to contract using SafeERC20
+        paymentToken.safeTransferFrom(msg.sender, address(this), lease.securityDeposit);
         
         emit SecurityDepositPaid(_leaseId, msg.sender, lease.securityDeposit);
         emit LeaseActivated(_leaseId);
@@ -210,10 +210,8 @@ contract LeaseManager is Ownable, ReentrancyGuard {
         }
         
         // Transfer rent from tenant to landlord
-        require(
-            paymentToken.transferFrom(msg.sender, lease.landlord, lease.monthlyRent),
-            "Rent transfer failed"
-        );
+        // Transfer rent from tenant to landlord using SafeERC20
+        paymentToken.safeTransferFrom(msg.sender, lease.landlord, lease.monthlyRent);
         
         // Record payment
         RentPayment memory payment = RentPayment({
@@ -273,19 +271,13 @@ contract LeaseManager is Ownable, ReentrancyGuard {
         
         // Return deposit to tenant
         if (_returnAmount > 0) {
-            require(
-                paymentToken.transfer(lease.tenant, _returnAmount),
-                "Deposit return failed"
-            );
+            paymentToken.safeTransfer(lease.tenant, _returnAmount);
         }
         
         // Keep remaining deposit (if any) as landlord compensation
         uint256 keepAmount = lease.depositPaid - _returnAmount;
         if (keepAmount > 0) {
-            require(
-                paymentToken.transfer(lease.landlord, keepAmount),
-                "Landlord compensation failed"
-            );
+            paymentToken.safeTransfer(lease.landlord, keepAmount);
         }
         
         emit SecurityDepositReturned(_leaseId, lease.tenant, _returnAmount);

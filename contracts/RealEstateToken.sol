@@ -53,7 +53,7 @@ contract RealEstateToken is ERC20, IERC3643, Ownable, AccessControl {
         _;
     }
     
-    modifier compliantTransfer(address _from, address _to, uint256 _amount) {
+    modifier onlyCompliant(address _from, address _to, uint256 _amount) {
         require(canTransfer(_from, _to, _amount), "Transfer not compliant");
         _;
     }
@@ -176,7 +176,7 @@ contract RealEstateToken is ERC20, IERC3643, Ownable, AccessControl {
     function transfer(
         address _to, 
         uint256 _amount
-    ) public override(ERC20, IERC20) compliantTransfer(msg.sender, _to, _amount) returns (bool) {
+    ) public override(ERC20, IERC20) onlyCompliant(msg.sender, _to, _amount) returns (bool) {
         return super.transfer(_to, _amount);
     }
     
@@ -187,8 +187,10 @@ contract RealEstateToken is ERC20, IERC3643, Ownable, AccessControl {
         address _from, 
         address _to, 
         uint256 _amount
-    ) public override(ERC20, IERC20) compliantTransfer(_from, _to, _amount) returns (bool) {
-        return super.transferFrom(_from, _to, _amount);
+    ) public override(ERC20, IERC20) onlyCompliant(_from, _to, _amount) returns (bool) {
+        _spendAllowance(_from, _msgSender(), _amount);
+        _transfer(_from, _to, _amount);
+        return true;
     }
     
     /**
@@ -279,6 +281,25 @@ contract RealEstateToken is ERC20, IERC3643, Ownable, AccessControl {
      */
     function getTotalPropertyValue() external view returns (uint256) {
         return propertyInfo.totalValue;
+    }
+    
+    /**
+     * @dev Hook called after token transfers to update compliance state
+     */
+    function _update(address from, address to, uint256 amount) 
+        internal 
+        override 
+    {
+        super._update(from, to, amount);
+        
+        // Update holder count in compliance contract if it supports it
+        if (address(compliance) != address(0)) {
+            try compliance.updateHolderCount(from, to, amount) {
+                // Successfully updated holder count
+            } catch {
+                // Compliance contract doesn't support holder tracking, continue
+            }
+        }
     }
 }
 

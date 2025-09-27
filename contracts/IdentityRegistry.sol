@@ -23,6 +23,20 @@ contract IdentityRegistry is IIdentityRegistry, Ownable {
     constructor() Ownable(msg.sender) {}
     
     /**
+     * @dev Self-register identity for KYC compliance (simplified for demo)
+     */
+    function registerIdentity() external {
+        require(!_registered[msg.sender], "Already registered");
+        
+        // For demo purposes, use sender's address as onchain ID and default country
+        _identities[msg.sender] = msg.sender;
+        _countries[msg.sender] = 840; // United States (ISO 3166-1 numeric)
+        _registered[msg.sender] = true;
+        
+        emit IdentityRegistered(msg.sender, msg.sender);
+    }
+    
+    /**
      * @dev Register a new identity for KYC compliance
      * @param _wallet The wallet address to register
      * @param _onchainID The onchain identity contract address
@@ -32,7 +46,7 @@ contract IdentityRegistry is IIdentityRegistry, Ownable {
         address _wallet, 
         address _onchainID, 
         uint16 _country
-    ) external override onlyOwner {
+    ) external override {
         require(_wallet != address(0), "Invalid wallet address");
         require(_onchainID != address(0), "Invalid onchain ID");
         require(_country > 0, "Invalid country code");
