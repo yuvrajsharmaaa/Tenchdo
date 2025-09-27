@@ -4,6 +4,8 @@ import { useWeb3 } from '../context/Web3Context';
 import { toast } from 'react-toastify';
 import ConnectionTest from '../components/ConnectionTest';
 import ContractTest from '../components/ContractTest';
+import ContractDebugger from '../components/ContractDebugger';
+import MetaMaskConnection from '../components/MetaMaskConnection';
 
 const Dashboard = () => {
   const { 
@@ -85,31 +87,41 @@ const Dashboard = () => {
 
   useEffect(() => {
     loadDashboardData();
-  }, [isConnected, account, contracts]);
+  }, [isConnected, account, contracts, loadDashboardData]);
 
   if (!isConnected) {
     return (
-      <div className="text-center py-12">
-        <ConnectionTest />
-        <div className="card max-w-md mx-auto mt-6">
-          <i className="fas fa-wallet text-6xl text-gray-300 mb-4"></i>
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Connect Your Wallet</h2>
-          <p className="text-gray-600 mb-6">
-            Connect your MetaMask wallet to access the Real Estate dApp and start managing tokenized properties.
-          </p>
-          <div className="text-sm text-gray-500">
-            <p className="mb-2">
-              <i className="fas fa-shield-alt text-primary mr-2"></i>
-              ERC-3643 Compliant Tokens
-            </p>
-            <p className="mb-2">
-              <i className="fas fa-user-check text-primary mr-2"></i>
-              KYC/AML Verification
-            </p>
-            <p>
-              <i className="fas fa-file-contract text-primary mr-2"></i>
-              Smart Contract Leases
-            </p>
+      <div className="space-y-6">
+        <div className="text-center py-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Real Estate dApp</h1>
+          <p className="text-gray-600">ERC-3643 Compliant Property Tokenization</p>
+        </div>
+        
+        <div className="max-w-2xl mx-auto">
+          <MetaMaskConnection />
+        </div>
+
+        <div className="max-w-4xl mx-auto">
+          <ConnectionTest />
+        </div>
+
+        <div className="text-center">
+          <div className="grid grid-3 gap-6 max-w-2xl mx-auto">
+            <div className="text-center">
+              <i className="fas fa-shield-alt text-3xl text-primary mb-3"></i>
+              <h3 className="font-semibold text-gray-800">ERC-3643 Compliant</h3>
+              <p className="text-sm text-gray-600">Permissioned token transfers</p>
+            </div>
+            <div className="text-center">
+              <i className="fas fa-user-check text-3xl text-primary mb-3"></i>
+              <h3 className="font-semibold text-gray-800">KYC/AML</h3>
+              <p className="text-sm text-gray-600">Identity verification</p>
+            </div>
+            <div className="text-center">
+              <i className="fas fa-file-contract text-3xl text-primary mb-3"></i>
+              <h3 className="font-semibold text-gray-800">Smart Leases</h3>
+              <p className="text-sm text-gray-600">Automated agreements</p>
+            </div>
           </div>
         </div>
       </div>
@@ -131,6 +143,9 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
+      {/* Debug Component */}
+      <ContractDebugger />
+      
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
@@ -186,7 +201,9 @@ const Dashboard = () => {
             </div>
             <div>
               <p className="text-sm text-gray-600">ETH Balance</p>
-              <p className="text-xl font-bold text-gray-900">{balances.eth}</p>
+              <p className="text-xl font-bold text-gray-900">
+                {parseFloat(balances.eth || '0') > 0 ? balances.eth : 'Loading...'}
+              </p>
             </div>
           </div>
         </div>
@@ -199,7 +216,9 @@ const Dashboard = () => {
             </div>
             <div>
               <p className="text-sm text-gray-600">Property Tokens</p>
-              <p className="text-xl font-bold text-gray-900">{balances.tokens}</p>
+              <p className="text-xl font-bold text-gray-900">
+                {parseFloat(balances.tokens || '0') > 0 ? balances.tokens : 'Loading...'}
+              </p>
             </div>
           </div>
         </div>
@@ -212,7 +231,9 @@ const Dashboard = () => {
             </div>
             <div>
               <p className="text-sm text-gray-600">USDC Balance</p>
-              <p className="text-xl font-bold text-gray-900">{balances.usdc}</p>
+              <p className="text-xl font-bold text-gray-900">
+                ${parseFloat(balances.usdc || '0') > 0 ? balances.usdc : 'Loading...'}
+              </p>
             </div>
           </div>
         </div>

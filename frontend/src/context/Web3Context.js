@@ -150,12 +150,27 @@ export const Web3Provider = ({ children }) => {
       // Check if we're on the correct network (localhost:8545 = chainId 1337)
       if (Number(chainId) !== 1337) {
         toast.warning('Please switch to the local development network (chainId: 1337)');
+        // Auto-switch to localhost network
+        await switchToLocalNetwork();
+      } else {
+        // Test network connectivity
+        try {
+          await web3Instance.eth.getBlockNumber();
+          console.log('✅ Network connectivity verified');
+        } catch (networkError) {
+          console.error('❌ Network connectivity issue:', networkError);
+          toast.error('Cannot connect to local blockchain. Please ensure Hardhat node is running on localhost:8545');
+        }
       }
 
       toast.success('Wallet connected successfully!');
     } catch (error) {
       console.error('Error connecting wallet:', error);
-      toast.error('Failed to connect wallet');
+      if (error.code === -32002) {
+        toast.error('Connection request already pending. Please check MetaMask.');
+      } else {
+        toast.error('Failed to connect wallet');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -212,20 +227,36 @@ export const Web3Provider = ({ children }) => {
 
   // Update balances
   const updateBalances = useCallback(async () => {
-    if (!web3 || !account || !contracts.realEstateToken || !contracts.mockUSDC) return;
+    if (!web3 || !account) return;
 
     try {
       // ETH balance
       const ethBalance = await web3.eth.getBalance(account);
       const ethBalanceFormatted = web3.utils.fromWei(ethBalance, 'ether');
 
-      // Token balance
-      const tokenBalance = await contracts.realEstateToken.methods.balanceOf(account).call();
-      const tokenBalanceFormatted = web3.utils.fromWei(tokenBalance, 'ether');
+      let tokenBalanceFormatted = '0';
+      let usdcBalanceFormatted = '0';
 
-      // USDC balance
-      const usdcBalance = await contracts.mockUSDC.methods.balanceOf(account).call();
-      const usdcBalanceFormatted = web3.utils.fromWei(usdcBalance, 'mwei'); // USDC has 6 decimals
+      // Token balance (with error handling)
+      if (contracts.realEstateToken) {
+        try {
+          const tokenBalance = await contracts.realEstateToken.methods.balanceOf(account).call();
+          tokenBalanceFormatted = web3.utils.fromWei(tokenBalance, 'ether');
+        } catch (error) {
+          console.warn('Error fetching token balance:', error);
+        }
+      }
+
+      // USDC balance (with error handling)
+      if (contracts.mockUSDC) {
+        try {
+          const usdcBalance = await contracts.mockUSDC.methods.balanceOf(account).call();
+          // USDC has 6 decimals, so divide by 10^6
+          usdcBalanceFormatted = (parseInt(usdcBalance) / 1000000).toString();
+        } catch (error) {
+          console.warn('Error fetching USDC balance:', error);
+        }
+      }
 
       setBalances({
         eth: parseFloat(ethBalanceFormatted).toFixed(4),
@@ -256,19 +287,77 @@ export const Web3Provider = ({ children }) => {
 
   // Register user identity (mock KYC)
   const registerIdentity = async (countryCode = 840) => { // Default to USA
-    if (!contracts.identityRegistry || !account) return;
+    if (!contracts.identityRegistry || !account) {
+      toast.error('Wallet not connected or contracts not loaded');
+      return;
+    }
 
     try {
       setIsLoading(true);
-      const tx = await contracts.identityRegistry.methods
-        .registerIdentity(account, account, countryCode)
-        .send({ from: account });
       
-      toast.success('Identity registered successfully!');
-      return tx;
+      // Check if already verified first
+      const alreadyVerified = await isUserVerified(account);
+      if (alreadyVerified) {
+        toast.info('Identity already registered and verified');
+        return;
+      }
+
+      console.log('Attempting to register identity for:', account);
+      console.log('Using country code:', countryCode);
+      console.log('Contract address:', contractAddresses.identityRegistry);
+
+      // Try the self-registration method first (no parameters)
+      try {
+        const gasEstimate = await contracts.identityRegistry.methods
+          .registerIdentity()
+          .estimateGas({ from: account });
+
+        const tx = await contracts.identityRegistry.methods
+          .registerIdentity()
+          .send({ 
+            from: account,
+            gas: Math.floor(Number(gasEstimate) * 1.5) // Convert BigInt to Number
+          });
+        
+        console.log('Self-registration successful:', tx);
+        toast.success('Identity registered successfully!');
+        setTimeout(updateBalances, 2000);
+        return tx;
+      } catch (selfRegError) {
+        console.log('Self-registration failed, trying admin registration:', selfRegError.message);
+        
+        // Fallback to admin registration method
+        const gasEstimate = await contracts.identityRegistry.methods
+          .registerIdentity(account, account, countryCode)
+          .estimateGas({ from: account });
+
+        const tx = await contracts.identityRegistry.methods
+          .registerIdentity(account, account, countryCode)
+          .send({ 
+            from: account,
+            gas: Math.floor(Number(gasEstimate) * 1.5) // Convert BigInt to Number
+          });
+        
+        console.log('Admin registration successful:', tx);
+        toast.success('Identity registered successfully!');
+        setTimeout(updateBalances, 2000);
+        return tx;
+      }
     } catch (error) {
       console.error('Error registering identity:', error);
-      toast.error('Failed to register identity');
+      
+      // More specific error handling
+      if (error.message.includes('User denied') || error.code === 4001) {
+        toast.info('Transaction cancelled by user');
+      } else if (error.message.includes('already registered')) {
+        toast.info('Identity already registered');
+      } else if (error.message.includes('insufficient funds')) {
+        toast.error('Insufficient ETH for gas fees');
+      } else if (error.message.includes('network')) {
+        toast.error('Network error. Please check your connection to localhost:8545');
+      } else {
+        toast.error(`Registration failed: ${error.message}`);
+      }
       throw error;
     } finally {
       setIsLoading(false);
