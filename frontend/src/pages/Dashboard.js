@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useWeb3 } from '../context/Web3Context';
+import { useWeb3 } from '../context/Web3ContextSepolia';
 import { toast } from 'react-toastify';
 import ConnectionTest from '../components/ConnectionTest';
 import ContractTest from '../components/ContractTest';

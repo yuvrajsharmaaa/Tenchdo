@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useWeb3 } from '../context/Web3Context';
+import { useWeb3 } from '../context/Web3ContextSepolia';
 
 const Navbar = () => {
   const location = useLocation();

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useWeb3 } from '../context/Web3Context';
+import { useWeb3 } from '../context/Web3ContextSepolia';
 
 const ContractTest = () => {
   const { web3, account, contracts, isConnected } = useWeb3();

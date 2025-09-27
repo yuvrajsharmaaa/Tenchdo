@@ -3,7 +3,7 @@ import { Web3 } from 'web3';
 import { toast } from 'react-toastify';
 
 // Import contract ABIs and addresses
-import contractAddresses from '../contracts/addresses.sepolia.json';
+import contractAddresses from '../contracts/addresses.arbitrum-sepolia.json';
 import RealEstateTokenABI from '../contracts/RealEstateToken.json';
 import IdentityRegistryABI from '../contracts/IdentityRegistry.json';
 import ComplianceABI from '../contracts/Compliance.json';
@@ -33,17 +33,17 @@ export const Web3Provider = ({ children }) => {
     usdc: '0'
   });
 
-  // Sepolia network configuration
-  const SEPOLIA_CONFIG = {
-    chainId: '0xAA36A7', // 11155111 in hex
-    chainName: 'Sepolia',
+  // Arbitrum Sepolia network configuration
+  const ARBITRUM_SEPOLIA_CONFIG = {
+    chainId: '0x66EEE', // 421614 in hex
+    chainName: 'Arbitrum Sepolia',
     nativeCurrency: {
       name: 'Ether',
       symbol: 'ETH',
       decimals: 18,
     },
-    rpcUrls: ['https://sepolia.infura.io/v3/your-infura-key'],
-    blockExplorerUrls: ['https://sepolia.etherscan.io'],
+    rpcUrls: ['https://sepolia-rollup.arbitrum.io/rpc'],
+    blockExplorerUrls: ['https://sepolia.arbiscan.io'],
   };
 
   // Check if MetaMask is installed
@@ -160,11 +160,11 @@ export const Web3Provider = ({ children }) => {
       setChainId(Number(chainId));
       setIsConnected(true);
 
-      // Check if we're on Sepolia (chainId 11155111)
-      if (Number(chainId) !== 11155111) {
-        toast.warning('Please switch to Sepolia testnet (Chain ID: 11155111)');
-        // Auto-switch to Sepolia network
-        await switchToSepolia();
+      // Check if we're on Arbitrum Sepolia (chainId 421614)
+      if (Number(chainId) !== 421614) {
+        toast.warning('Please switch to Arbitrum Sepolia testnet (Chain ID: 421614)');
+        // Auto-switch to Arbitrum Sepolia network
+        await switchToArbitrumSepolia();
       } else {
         // Test network connectivity
         try {
@@ -172,7 +172,7 @@ export const Web3Provider = ({ children }) => {
           console.log('✅ Network connectivity verified');
         } catch (networkError) {
           console.error('❌ Network connectivity issue:', networkError);
-          toast.error('Cannot connect to Sepolia. Please check your network connection.');
+          toast.error('Cannot connect to Arbitrum Sepolia. Please check your network connection.');
         }
       }
 
@@ -198,14 +198,14 @@ export const Web3Provider = ({ children }) => {
     toast.info('Wallet disconnected');
   };
 
-  // Switch to Sepolia network
-  const switchToSepolia = async () => {
+  // Switch to Arbitrum Sepolia network
+  const switchToArbitrumSepolia = async () => {
     if (!isMetaMaskInstalled()) return;
 
     try {
       await window.ethereum.request({
         method: 'wallet_switchEthereumChain',
-        params: [{ chainId: SEPOLIA_CONFIG.chainId }],
+        params: [{ chainId: ARBITRUM_SEPOLIA_CONFIG.chainId }],
       });
     } catch (error) {
       if (error.code === 4902) {
@@ -213,16 +213,16 @@ export const Web3Provider = ({ children }) => {
         try {
           await window.ethereum.request({
             method: 'wallet_addEthereumChain',
-            params: [SEPOLIA_CONFIG],
+            params: [ARBITRUM_SEPOLIA_CONFIG],
           });
-          toast.success('Sepolia network added to MetaMask');
+          toast.success('Arbitrum Sepolia network added to MetaMask');
         } catch (addError) {
           console.error('Error adding network:', addError);
-          toast.error('Failed to add Sepolia network');
+          toast.error('Failed to add Arbitrum Sepolia network');
         }
       } else {
         console.error('Error switching network:', error);
-        toast.error('Failed to switch to Sepolia');
+        toast.error('Failed to switch to Arbitrum Sepolia');
       }
     }
   };
@@ -356,7 +356,7 @@ export const Web3Provider = ({ children }) => {
       } else if (error.message.includes('insufficient funds')) {
         toast.error('Insufficient ETH for gas fees');
       } else if (error.message.includes('network')) {
-        toast.error('Network error. Please check your connection to Sepolia');
+        toast.error('Network error. Please check your connection to Arbitrum Sepolia');
       } else {
         toast.error(`Registration failed: ${error.message}`);
       }
@@ -381,8 +381,8 @@ export const Web3Provider = ({ children }) => {
 
     const handleChainChanged = (chainId) => {
       setChainId(Number(chainId));
-      if (Number(chainId) !== 11155111) {
-        toast.warning('Please switch to Sepolia testnet (Chain ID: 11155111)');
+      if (Number(chainId) !== 421614) {
+        toast.warning('Please switch to Arbitrum Sepolia testnet (Chain ID: 421614)');
       }
     };
 
@@ -423,12 +423,12 @@ export const Web3Provider = ({ children }) => {
     balances,
     connectWallet,
     disconnectWallet,
-    switchToSepolia,
+    switchToArbitrumSepolia,
     updateBalances,
     isUserVerified,
     registerIdentity,
     isMetaMaskInstalled: isMetaMaskInstalled(),
-    networkConfig: SEPOLIA_CONFIG
+    networkConfig: ARBITRUM_SEPOLIA_CONFIG
   };
 
   return (
